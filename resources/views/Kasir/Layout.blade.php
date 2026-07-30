@@ -12,6 +12,20 @@
 
 <body class="bg-gray-100 text-gray-800">
 
+    @if (session()->has('login_success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Login berhasil',
+                text: @json(session('login_success')),
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                heightAuto: false,
+            });
+        </script>
+    @endif
+
     @if (session()->has('error'))
         <script>
             Swal.fire({
@@ -43,6 +57,9 @@
             <nav class="space-y-2">
                 <a href="{{ route('kasir.transaksi.page') }}" class="block py-2 px-3 rounded hover:bg-gray-200">Sales
                     Transactions</a>
+                <a href="{{ route('kasir.drafts.index') }}" class="block py-2 px-3 rounded hover:bg-gray-200">
+                    Draft Transaksi
+                </a>
                 <a href="{{ route('kasir.laporan-transaksi.page') }}"
                     class="block py-2 px-3 rounded hover:bg-gray-200">Sales Reports</a>
             </nav>

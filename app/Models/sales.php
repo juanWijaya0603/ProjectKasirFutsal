@@ -7,18 +7,26 @@ use Illuminate\Database\Eloquent\Model;
 
 class sales extends Model
 {
-    /** @use HasFactory<\Database\Factories\SalesFactory> */
     use HasFactory;
 
-        /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'user_id',
+        'invoice_number',
         'sale_date',
-        'total_price'
+        'total_price',
+        'status',
+        'payment_method',
+        'paid_at',
+        'confirmed_at',
+        'cancelled_at',
+    ];
+
+    protected $casts = [
+        'sale_date' => 'datetime',
+        'paid_at' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'total_price' => 'decimal:2',
     ];
 
     public function user()
@@ -28,7 +36,6 @@ class sales extends Model
 
     public function saleItems()
     {
-        return $this->hasMany(sale_items::class);
+        return $this->hasMany(sale_items::class, 'sale_id');
     }
-
 }

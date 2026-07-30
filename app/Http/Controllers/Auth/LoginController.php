@@ -42,9 +42,9 @@ class LoginController extends Controller
             ]);
             // Redirect sesuai role
             return match (Auth::user()->role) {
-                'admin' => redirect()->route('admin.dashboard.page')->with('success', 'Berhasil login sebagai admin!!!'),
-                'kasir' => redirect()->route('kasir.transaksi.page')->with('success', 'Berhasil login sebagai kasir!!!'),
-                'gudang' => redirect()->route('gudang.purchase.page')->with('success', 'Berhasil login sebagai gudang!!!'),
+                'admin' => redirect()->route('admin.dashboard.page')->with('login_success', 'Berhasil login sebagai admin.'),
+                'kasir' => redirect()->route('kasir.transaksi.page')->with('login_success', 'Berhasil login sebagai kasir.'),
+                'gudang' => redirect()->route('gudang.purchase.page')->with('login_success', 'Berhasil login sebagai gudang.'),
                 default => abort(403),
             };
         }

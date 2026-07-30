@@ -14,6 +14,20 @@
 
 <body class="bg-gray-100">
 
+    @if (session()->has('login_success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Login berhasil',
+                text: @json(session('login_success')),
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                heightAuto: false,
+            });
+        </script>
+    @endif
+
     <div class="flex min-h-screen">
         <!-- Sidebar -->
         <aside class="w-64 bg-white shadow-lg flex flex-col h-screen">

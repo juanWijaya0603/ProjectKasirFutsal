@@ -13,11 +13,53 @@ return new class extends Migration
     {
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->references('id')->on('users')->onDelete('cascade');
+
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
+            /*
+             * Nullable sementara agar seeder lama yang belum memiliki
+             * invoice_number tetap dapat dijalankan.
+             *
+             * Transaksi baru dari controller tetap akan selalu
+             * mendapatkan nomor invoice.
+             */
+            $table->string('invoice_number')
+                ->nullable()
+                ->unique();
+
             $table->dateTime('sale_date');
-            $table->decimal('total_price', 10, 2);
+
+            $table->decimal('total_price', 10, 2)
+                ->default(0);
+
+            $table->enum('status', [
+                'draft',
+                'paid',
+                'cancelled',
+            ])->default('draft');
+
+            $table->string('payment_method', 30)
+                ->default('cash');
+
+            $table->dateTime('paid_at')
+                ->nullable();
+
+            $table->dateTime('confirmed_at')
+                ->nullable();
+
+            $table->dateTime('cancelled_at')
+                ->nullable();
+
             $table->timestamps();
 
+            /*
+             * Mempercepat query daftar draft berdasarkan kasir
+             * dan laporan berdasarkan status pembayaran.
+             */
+            $table->index(['user_id', 'status']);
+            $table->index(['status', 'paid_at']);
         });
     }
 

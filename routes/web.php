@@ -22,21 +22,60 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/products', [AdminController::class, 'productsPage'])->name('product.page');
     Route::get('/suppliers', [AdminController::class, 'suppliersPage'])->name('supplier.page');
     Route::get('/users', [AdminController::class, 'usersPage'])->name('user.page');
-    Route::get('/laporan',[AdminController::class, 'laporanPage'])->name('laporan.page');
-    
+    Route::get('/laporan', [AdminController::class, 'laporanPage'])->name('laporan.page');
+
     Route::resource('/product', ProductController::class);
     Route::resource('/supplier', SuppliersController::class);
     Route::resource('/user', UserController::class);
 });
 
-Route::middleware(['auth', 'role:kasir'])->prefix('kasir')->name('kasir.')->group(function () {
-    Route::get('/transaksi', [KasirController::class, 'transaksi'])->name('transaksi.page');
-    Route::post('/transaksi', [KasirController::class, 'prosesTransaksi'])->name('transaksi.proses');
-    Route::get('/laporan-transaksi', [KasirController::class, 'LaporanTransaksi'])->name('laporan-transaksi.page');
-});
+Route::middleware(['auth', 'role:kasir'])
+    ->prefix('kasir')
+    ->name('kasir.')
+    ->group(function () {
+        Route::get(
+            '/transaksi',
+            [KasirController::class, 'transaksi']
+        )->name('transaksi.page');
+
+        Route::get(
+            '/drafts',
+            [KasirController::class, 'drafts']
+        )->name('drafts.index');
+
+        Route::post(
+            '/drafts',
+            [KasirController::class, 'storeDraft']
+        )->name('drafts.store');
+
+        Route::get(
+            '/drafts/{sale}',
+            [KasirController::class, 'showDraft']
+        )->name('drafts.show');
+
+        Route::put(
+            '/drafts/{sale}',
+            [KasirController::class, 'updateDraft']
+        )->name('drafts.update');
+
+        Route::delete(
+            '/drafts/{sale}',
+            [KasirController::class, 'destroyDraft']
+        )->name('drafts.destroy');
+
+        Route::post(
+            '/drafts/{sale}/confirm',
+            [KasirController::class, 'confirmDraft']
+        )->name('drafts.confirm');
+
+        Route::get(
+            '/laporan-transaksi',
+            [KasirController::class, 'LaporanTransaksi']
+        )->name('laporan-transaksi.page');
+    });
 
 
-Route::middleware((['auth','role:gudang']))->prefix('gudang')->name('gudang.')->group(function(){
+Route::middleware((['auth', 'role:gudang']))->prefix('gudang')->name('gudang.')->group(function () {
     Route::get('/purchase', [GudangController::class, 'purchasePage'])->name('purchase.page');
     Route::post('/purchase', [GudangController::class, 'prosesPurchase'])->name('purchase.proses');
     Route::get('/laporan-purchase', [GudangController::class, 'laporanPage'])->name('laporan-purchase.page');

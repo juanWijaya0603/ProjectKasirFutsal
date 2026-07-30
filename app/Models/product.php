@@ -43,7 +43,7 @@ class product extends Model
 
     public function purchaseItems()
     {
-        return $this->hasMany(pruchase_items::class);
+        return $this->hasMany(PurchaseItem::class);
     }
 
     public function category()

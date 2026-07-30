@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
-use Carbon\Carbon;
 
 class SalesSeeder extends Seeder
 {
@@ -15,42 +15,103 @@ class SalesSeeder extends Seeder
     public function run(): void
     {
         $faker = Faker::create();
-        $userIds = DB::table('users')->pluck('id')->toArray();
-        $productData = DB::table('products')->select('id', 'price', 'stock')->get();
 
-        if (empty($userIds)) {
-            $this->command->info('No users found, skipping sale seeding. Please run UserSeeder first.');
+        /*
+         * Penjualan hanya boleh dibuat atas nama user kasir.
+         */
+        $kasirIds = DB::table('users')
+            ->where('role', 'kasir')
+            ->pluck('id')
+            ->toArray();
+
+        $productData = DB::table('products')
+            ->select('id', 'price', 'stock')
+            ->where('stock', '>', 0)
+            ->get();
+
+        if (empty($kasirIds)) {
+            $this->command->warn(
+                'Tidak ada user kasir. Jalankan UserSeeder terlebih dahulu.'
+            );
+
             return;
         }
+
         if ($productData->isEmpty()) {
-            $this->command->info('No products found, skipping sale seeding. Please run ProductSeeder first.');
+            $this->command->warn(
+                'Tidak ada produk dengan stok tersedia. Jalankan ProductSeeder terlebih dahulu.'
+            );
+
             return;
         }
 
-        for ($i = 0; $i < 30; $i++) {
-            $saleDate = $faker->dateTimeBetween('-1 year', 'now');
-            $userId = $faker->randomElement($userIds);
+        for ($i = 1; $i <= 30; $i++) {
+            $saleDate = Carbon::instance(
+                $faker->dateTimeBetween('-1 year', 'now')
+            );
 
-            // Create Sale record
+            $userId = $faker->randomElement($kasirIds);
+
+            /*
+             * Nomor urutan dan timestamp membuat invoice tetap unik,
+             * meskipun beberapa transaksi memiliki waktu yang sama.
+             */
+            $invoiceNumber = sprintf(
+                'INV-SEED-%03d-%s',
+                $i,
+                $saleDate->format('YmdHis')
+            );
+
+            /*
+             * Buat penjualan sementara dengan total 0.
+             * Total akan diperbarui setelah seluruh item dibuat.
+             */
             $saleId = DB::table('sales')->insertGetId([
                 'user_id' => $userId,
-                'sale_date' => $saleDate, // Gunakan full datetime
+                'invoice_number' => $invoiceNumber,
+                'sale_date' => $saleDate,
                 'total_price' => 0,
+                'status' => 'paid',
+                'payment_method' => 'cash',
+                'paid_at' => $saleDate,
+                'confirmed_at' => $saleDate,
+                'cancelled_at' => null,
                 'created_at' => $saleDate,
                 'updated_at' => $saleDate,
             ]);
 
             $totalSalePrice = 0;
-            $numberOfItemsInSale = $faker->numberBetween(1, 3);
-            $availableProducts = $productData->where('stock', '>', 0);
 
-            if ($availableProducts->isEmpty()) continue;
+            $numberOfItemsInSale = $faker->numberBetween(
+                1,
+                min(3, $productData->count())
+            );
 
-            $selectedProducts = $availableProducts->random(min($numberOfItemsInSale, $availableProducts->count()))->all();
+            /*
+             * Mengambil produk berbeda untuk setiap transaksi.
+             */
+            $selectedProducts = $productData
+                ->random($numberOfItemsInSale);
+
+            /*
+             * Collection::random() dapat menghasilkan satu model
+             * jika jumlahnya satu, jadi dibungkus kembali sebagai collection.
+             */
+            $selectedProducts = collect($selectedProducts);
 
             foreach ($selectedProducts as $product) {
-                $quantity = $faker->numberBetween(1, min(5, $product->stock));
-                $pricePerUnit = $product->price;
+                $maximumQuantity = min(5, (int) $product->stock);
+
+                if ($maximumQuantity < 1) {
+                    continue;
+                }
+
+                $quantity = $faker->numberBetween(
+                    1,
+                    $maximumQuantity
+                );
+
+                $pricePerUnit = (float) $product->price;
                 $subtotal = $quantity * $pricePerUnit;
 
                 DB::table('sale_items')->insert([
@@ -66,9 +127,16 @@ class SalesSeeder extends Seeder
                 $totalSalePrice += $subtotal;
             }
 
-            DB::table('sales')->where('id', $saleId)->update([
-                'total_price' => $totalSalePrice
-            ]);
+            DB::table('sales')
+                ->where('id', $saleId)
+                ->update([
+                    'total_price' => $totalSalePrice,
+                    'updated_at' => $saleDate,
+                ]);
         }
+
+        $this->command->info(
+            'Berhasil membuat 30 transaksi penjualan berstatus paid.'
+        );
     }
 }
